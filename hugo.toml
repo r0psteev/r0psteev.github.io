@@ -6,5 +6,13 @@ author = 'r0psteev'
 copyright = 'r0psteev'
 
 [params]
-    [params.header]
-        logo = "logo.svg"
+  [params.header]
+    logo = "logo.svg"
+    title = ""
+
+  [social_media]
+    [[social_media.items]]
+      enabled = true
+      title = 'Github'
+      icon = 'brand-github'
+      link = 'https://github.com/tomowang'
