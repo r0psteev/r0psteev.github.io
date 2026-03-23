@@ -2,3 +2,9 @@ baseURL = 'https://example.org/'
 languageCode = 'en-us'
 title = 'r0psteev - Security Blog'
 theme = 'tailwind'
+author = 'r0psteev'
+copyright = 'r0psteev'
+
+[params]
+    [params.header]
+        logo = "logo.svg"
