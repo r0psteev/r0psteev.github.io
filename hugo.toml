@@ -7,7 +7,7 @@ copyright = 'r0psteev'
 
 [params]
   [params.header]
-    logo = "logo.svg"
+    logo = "logo.jpg"
     title = ""
 
   [social_media]
