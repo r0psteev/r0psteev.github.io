@@ -4,6 +4,7 @@ title = 'r0psteev - Security Blog'
 theme = 'tailwind'
 author = 'r0psteev'
 copyright = 'r0psteev'
+summaryLength = 70
 
 [params]
   [params.header]
