@@ -7,13 +7,15 @@ copyright = 'r0psteev'
 summaryLength = 70
 
 [params]
+  subtitle = ""
+
   [params.header]
     logo = "logo.jpg"
-    title = ""
+    sticky = true
 
-  [social_media]
-    [[social_media.items]]
+  [params.social_media]
+    [[params.social_media.items]]
       enabled = true
       title = 'Github'
       icon = 'brand-github'
-      link = 'https://github.com/tomowang'
+      link = 'https://github.com/r0psteev'
