@@ -1,6 +1,6 @@
 +++
 date = '2026-03-26T19:31:12+01:00'
-draft = true
+draft = false
 title = 'YesWeHack Dojo 45'
 tags = ['ctf', 'sqli', 'path traversal']
 image = 'featured.png'
