@@ -534,3 +534,70 @@ Content-Length: 1113
 
 [{"id":2,"username":"admin","email":"admin@monitorsfour.htb","password":"56b32eb43e6f15395f6c46c1c9e1cd36","role":"super user","token":"8024b78f83f102da4f","name":"Marcus Higgins","position":"System Administrator","dob":"1978-04-26","start_date":"2021-01-12","salary":"320800.00"},{"id":5,"username":"mwatson","email":"mwatson@monitorsfour.htb","password":"69196959c16b26ef00b77d82cf6eb169","role":"user","token":"0e543210987654321","name":"Michael Watson","position":"Website Administrator","dob":"1985-02-15","start_date":"2021-05-11","salary":"75000.00"},{"id":6,"username":"janderson","email":"janderson@monitorsfour.htb","password":"2a22dcf99190c322d974c8df5ba3256b","role":"user","token":"0e999999999999999","name":"Jennifer Anderson","position":"Network Engineer","dob":"1990-07-16","start_date":"2021-06-20","salary":"68000.00"},{"id":7,"username":"dthompson","email":"dthompson@monitorsfour.htb","password":"8d4a7e7fd08555133e056d9aacb1e519","role":"user","token":"0e111111111111111","name":"David Thompson","position":"Database Manager","dob":"1982-11-23","start_date":"2022-09-15","salary":"83000.00"}]
 ```
+
+
+## Cracking Hashes
+
+- After dumping the users informations in the previous step, the password hashes obtained where
+cracked using crackstation.
+- The hash for the user with username `admin` (Marcus Higgins) was successfully cracked into the
+password `wonderful1`.
+
+![password for admin user cracked](4.png)
+
+
+## Login to main website
+
+- With the credentials `admin:wonderful1` is became possible to login to the main website.
+
+![Main website http://monitorsfour.htb](5.png)
+
+- Overall, it is a Dashboard for managing ads campaigns and invoices for various customers
+- It also serves as a platform for planning tasks, and sort them by priority.
+- It possesses a Changelog section at `http://monitorsfour.htb/admin/changelog`
+- An infrastructure notice from this Changelog says that the infrastructure has been migrated to Windows
+and the websites are running on Docker via **Docker Desktop 4.44.2** (This is an important point later).
+
+![Changelog Infrastructure change notice](6.png)
+
+
+# Cacti
+
+## Login to Cacti
+
+- The site runs cacti version 1.2.28
+
+![Cacti Login Page and version](7.png)
+
+- Since at this point the password for the `admin` user on the main website had been obtained,
+The next step was to try this password on cacti.
+- To achieve this, a small list of usernames was constructed based on the name information of the `admin` user
+from the main website.
+
+```
+admin
+marcus
+mhiggins
+higgins
+```
+
+- The login form of cacti is protected by a dynamic CSRF token.
+- A bruteforce script with python, requests and beautifulsoup4 which grabbed the crsf token was made
+to automate this action over every element of the wordlist.
+
+```sh
+$python brute.py 
+[+] might have found working combo: marcus:wonderful1
+
+```
+- The combination `marcus:wonderful1` was found to login successfully to cacti.
+- After login to cacti, we could see the failed login attempts from our script in the Logs tab.
+- The login attempts are said to come from the IP address `172.18.0.1`, which looks like a docker
+network address. So it was assumed that may be cacti was in a container too.
+
+![Cacti logs tab](8.png)
+
+
+## CVE-2025-24367
+
+According to the Github Advisory [XXX](), an authenticated user can ...
