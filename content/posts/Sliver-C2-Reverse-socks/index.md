@@ -1,6 +1,6 @@
 +++
 date = '2026-05-21T11:21:18+01:00'
-draft = true
+draft = false
 title = 'Sliver C2 Reverse Socks'
 tags = ['sliver-c2', 'lateral-movement', 'proxy']
 image = "featured.png"
