@@ -2,6 +2,10 @@
 date = '2026-05-07T11:18:43+01:00'
 draft = true
 title = 'HTB MonitorsFour'
+tags = [
+  'hackthebox', 'php', 'type-juggling', 'password-cracking', 'cacti', 'CVE-2025-24367', 'Docker Desktop',
+  'CVE-2025-9074', 'windows', 'sliver-c2'
+  ]
 image = 'featured.png'
 summary = """
 MonitorsFour is an easy Windows box from HackTheBox in which we exploit a type juggling
@@ -532,7 +536,7 @@ Content-Length: 1113
 ## Cracking Hashes
 
 - After dumping the users informations in the previous step, the password hashes obtained where
-cracked using crackstation.
+cracked using [crackstation](https://crackstation.net/).
 - The hash for the user with username `admin` (Marcus Higgins) was successfully cracked into the
 password `wonderful1`.
 

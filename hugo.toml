@@ -14,7 +14,7 @@ summaryLength = 70
   subtitle = ""
 
   [params.header]
-    logo = "logo.jpg"
+    logo = "logo.png"
     sticky = true
 
   [params.social_media]

@@ -2,7 +2,7 @@
 date = '2026-03-26T19:31:12+01:00'
 draft = false
 title = 'YesWeHack Dojo 45'
-tags = ['ctf', 'sqli', 'path traversal']
+tags = ['YesWeHack', 'ctf', 'sqli', 'path traversal']
 image = 'featured.png'
 summary = """
 In the Dojo 45 Challenge (Chainfection), an SQL injection in Sequelize ORM < 6.19.1, and a Path traversal vulnerability in Path Sanitizer < 3.1.0, allow for arbitrary file writes on the application server, and ultimately to remote code execution via overwriting ejs template files.
