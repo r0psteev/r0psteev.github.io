@@ -2,6 +2,14 @@
 date = '2026-05-21T11:21:18+01:00'
 draft = true
 title = 'Sliver C2 Reverse Socks'
+tags = ['sliver-c2', 'lateral-movement', 'proxy']
+image = "featured.png"
+summary = """
+In this short blog post, Sliver C2 in-band proxy functionality is explored
+to tunnel an attacker machine's traffic into a docker network through an implant
+deployed in a container of the network, and access other containers/systems connected
+to the same network.
+"""
 +++
 
 # Introduction
@@ -37,7 +45,7 @@ an implant).
 
 - The proposed application to deploy is made up of an `nginx` web server and a `mysql` database container.
 - The goal is to deploy an implant on the web container and tunnel our tools traffic through it
-so as to scan other services present in the internal docker network `172.XX.0.0/16`
+so as to scan other services present in the internal docker network `172.18.0.0/16`
 
 ```yaml
 services:
@@ -124,7 +132,7 @@ root@8f115929f15e:/# /tmp/SUPERIOR_CESSPOOL
 
 - Following execution of the implant, a session is obtained at the Sliver server.
 
-```sh
+```
 [*] Session e1524948 SUPERIOR_CESSPOOL - 192.168.122.162:56642 (8f115929f15e) - linux/amd64 - Sat, 28 Feb 2026 07:04:25 WAT
 
 [server] sliver > sessions
