@@ -4,19 +4,12 @@ draft = true
 title = 'HTB MonitorsFour'
 image = 'featured.png'
 summary = """
-The MonitorsFour box consists of a main PHP application listening on port 80, which
-has an API that suffers from a PHP type juggling vulnerability which we exploit to dump usernames
-and password hashes from its database.
-We crack the hash of the Administrator user Marcus Higgins from this dump, and use it to login
-to a cacti instance running on the same port as a virtual host.
-The cacti version running on the box is cacti 1.2.28, and suffers from CVE-2025-24367,
-which is an abuse of the graph creation and graph template functionalities in cacti, and allow us
-to drop arbitrary php scripts at the webroot of the application and thus achieve Remote Code Execution.
-From CVE-2025-24367, we get a shell within a docker container, and abuse CVE-2025-9074, which
-is a vulnerability in Docker Desktop prior to version < 4.44.3 whereby the Docker Engine api is exposed
-unauthenticated and accessible from within running containers. CVE-2025-9074 lets us spawn
-a container to which we mount the root C:/ of the Windows host, and are thus able to access the
-root flag in `C:/User/Administator/Desktop/root.txt`.
+MonitorsFour is an easy Windows box from HackTheBox in which we exploit a type juggling
+vulnerability in an API to dump user credentials.
+From the credentials, we login to a cacti instance which is vulnerable to `CVE-2025-24367`.
+This vulnerability is exploited to gain a shell in a docker container and from the docker
+container, `CVE-2025-9074` is exploited on Docker Desktop to launch another container which
+mounts the `C:/` drive of the Windows host within the container and access the root flag.
 """
 +++
 
@@ -582,7 +575,7 @@ higgins
 ```
 
 - The login form of cacti is protected by a dynamic CSRF token.
-- A bruteforce script with **python**, **requests** and **beautifulsoup4** which grabbed the crsf token was made
+- A [bruteforce script](https://github.com/r0psteev/hackthebox/blob/main/monitorsfour/brute.py) with **python**, **requests** and **beautifulsoup4** which grabbed the CRSF token was made
 to automate this action over every element of the wordlist.
 
 ```sh
@@ -710,6 +703,8 @@ where found:
 ![Location of shell.php at /cacti](17.png)
 
 ![Testing shell.php on cacti.monitorsfour.htb](18.png)
+
+- The Exploitation process was also automated into a [custom script](https://github.com/r0psteev/hackthebox/blob/main/monitorsfour/cve-2025-24367.py)
 
 
 # Post Exploitation
@@ -1142,3 +1137,15 @@ root.txt
 # cat /host_root/Users/Administrator/Desktop/root.txt
 4e8016ca************************
 ```
+
+
+# Reference
+
+- https://0xdf.gitlab.io/2025/01/18/htb-monitorsthree.html# 
+- https://github.com/danielmiessler/seclists
+- https://github.com/r0psteev/hackthebox/blob/main/monitorsfour/brute.py
+- https://github.com/Cacti/cacti/security/advisories/GHSA-fxrq-fr7h-9rqq
+- https://github.com/vulhub/vulhub/tree/master/cacti/CVE-2025-24367
+- https://medium.com/@929319519qq/cve-2025-24367-exploit-no-code-59aff124d547
+- https://github.com/r0psteev/hackthebox/blob/main/monitorsfour/cve-2025-24367.py
+- https://infosecwriteups.com/only-two-lines-of-code-simple-docker-trick-gives-attackers-host-access-a638293f43ad
