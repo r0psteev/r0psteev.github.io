@@ -1,0 +1,28 @@
+{{- $img := .Page.Resources.GetMatch .Destination -}}
+{{- $width := "" -}}
+{{- $height := "" -}}
+
+{{- /* Parse width and height from the markdown title string if present */ -}}
+{{- with .Title -}}
+  {{- $wMatch := findRE `width=([^\s]+)` . 1 -}}
+  {{- if $wMatch }}{{ $width = index (split (index $wMatch 0) "=") 1 }}{{ end -}}
+  
+  {{- $hMatch := findRE `height=([^\s]+)` . 1 -}}
+  {{- if $hMatch }}{{ $height = index (split (index $hMatch 0) "=") 1 }}{{ end -}}
+{{- end -}}
+
+{{- if $img -}}
+  {{- /* Default optimization: convert to WebP to save space */ -}}
+  {{- $optimized := $img.Resize "1200x webp" -}}
+  
+  <img src="{{ $optimized.RelPermalink }}" 
+       alt="{{ .Text }}" 
+       class="mx-auto my-4 rounded-lg shadow-sm"
+       style="{{ if $width }}width: {{ $width }} !important;{{ end }} {{ if $height }}height: {{ $height }} !important;{{ end }}">
+{{- else -}}
+  {{- /* Fallback for absolute or static links */ -}}
+  <img src="{{ .Destination | safeURL }}" 
+       alt="{{ .Text }}" 
+       class="mx-auto my-4 rounded-lg shadow-sm"
+       style="{{ if $width }}width: {{ $width }} !important;{{ end }} {{ if $height }}height: {{ $height }} !important;{{ end }}">
+{{- end -}}
