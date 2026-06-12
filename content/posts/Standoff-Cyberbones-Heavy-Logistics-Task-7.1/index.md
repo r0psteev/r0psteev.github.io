@@ -2,13 +2,23 @@
 date = '2026-05-27T11:54:51+01:00'
 draft = true
 title = 'Standoff Cyberbones Heavy Logistics Task 7.1'
+image = "featured.png"
+tags = ["Active Directory", "MaxPatrol SIEM", "Blue Team", "cyberrange", "digital twin", "Kerberos"]
+summary = """
+Standoff Cyberbones is a Cyberrange in which we investigate events which happened on a fictional
+State called State F. This state contains a number of industries which are digital twins of real industries, like
+Banking, City & Housing Utilities, Heavy Logistics..
+In this exercise we investigate a phishing event against a Heavy Logistics industry, which led attackers
+to discover a password file on the workstation of a user, and perform privilege escalation within the
+domain.
+"""
 +++
 
 
 # Introduction
 
 The Standoff Cyberbones is a virtual environment which puts us in a situation of a cyber defender for a fictional state
-called State F. State F possesses a number of critical Industries, which were attacked during the
+called **State F**. State F possesses a number of critical Industries, which were attacked during the
 Standoff Cyberbattle 2022. State F's industries are **digital twins** of real industries like Banking, Heavy Logistics,
 City & Housing Utilities ... etc.
 
@@ -30,8 +40,8 @@ The perpetrators of the attack gained access to the computer of the HR officer, 
 to escalate their privileges.
 The goal is to find the name of the HR officer's workstation on which the password file is stored.
 
-Administrator name: **Boyd Rivers**
-Administrator account: **b_rivers_admin**
+- Administrator name: **Boyd Rivers**
+- Administrator account: **b_rivers_admin**
 
 Timeline of the attack: **November 23, 2022 from 09:30 to 09:50 UTC**
 
@@ -145,8 +155,7 @@ The previous query was modified to filter for events in which the `b_rivers_admi
 event.
 
 ```sql
-in_list(["10.156.24.5", "10.156.24.2", "10.156.24.4"], src.ip) and in_list(["dc.hv-logistics.stf", "dc-2.hv-logistics.stf"], dst.host) and
-subject.account.name = "b_rivers_admin"
+in_list(["10.156.24.5", "10.156.24.2", "10.156.24.4"], src.ip) and in_list(["dc.hv-logistics.stf", "dc-2.hv-logistics.stf"], dst.host) and subject.account.name = "b_rivers_admin"
 ```
 
 - From this query, a single event was matched.
@@ -164,8 +173,7 @@ The previous query was further refined by removing the `in_list(["dc.hv-logistic
 constraint which enforced that `dc.hv-logistics.stf` and `dc-2.hv-logistics.stf` be the destination hosts of the event.
 
 ```sql
-in_list(["10.156.24.5", "10.156.24.2", "10.156.24.4"], src.ip) and
-subject.account.name = "b_rivers_admin"
+in_list(["10.156.24.5", "10.156.24.2", "10.156.24.4"], src.ip) and subject.account.name = "b_rivers_admin"
 ```
 
 - There were 35 events that matched the query above.
@@ -192,10 +200,18 @@ subject.account.name = "b_rivers_admin"
   from 10.156.24.4. The name of this HR officer's workstation is `COMP-2159.hv-logistics.stf` (from the full network diagram).
 
 - It was also noticed in the updated query above, that the events of interest don't have the field `dst.host`, but
-  `event_src.host`instead, with the value `dc-2.hv-logistics.stf` (suggesting that the DC was the source of the event).
+  `event_src.host` instead, with the value `dc-2.hv-logistics.stf` (suggesting that the DC was the source of the event).
   Which explains why we couldn't capture these events in the previous query which was filtering with `dst.host`.
+
+![`event_src.host` instead of `dst.host` is `dc-2`](./17.png)
+
+- The points for the task were acquired by submitting the hostname `COMP-2159.hv-logistics.stf`
+
+![Challenge solved](./18.png)
 
 
 # Ref
 
+- https://defend.standoff365.com/en-US/
 - https://cyberbones.standoff365.com/en-US/
+- https://help.ptsecurity.com/en-US/projects/siem/latest/help/10887370763
