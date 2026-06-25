@@ -1,6 +1,6 @@
 +++
 date = '2026-05-27T11:54:51+01:00'
-draft = true
+draft = false
 title = 'Standoff Cyberbones Heavy Logistics Task 7.1'
 image = "featured.png"
 tags = ["Active Directory", "MaxPatrol SIEM", "Blue Team", "cyberrange", "digital twin", "Kerberos"]
