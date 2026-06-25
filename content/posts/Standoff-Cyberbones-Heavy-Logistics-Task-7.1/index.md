@@ -26,7 +26,7 @@ The Standoff Cyberbattle is an annual cyber exercise which brings together teams
 to attack a digital replica of the fictional state, State F, and generate security relevant events.
 
 Logs, Artifcats and traffic dumps from the Standoff Cyberbattle are collected, effective TTPs from white hat hackers are handpicked and their kill chains reconstructed. For us defenders to investigate them in a virtual environment
-using **real commercial security tools**. This virtual environment is referred to as Cyberbones.
+using **commercial security tools**. This virtual environment is referred to as Cyberbones.
 
 
 # Task Description

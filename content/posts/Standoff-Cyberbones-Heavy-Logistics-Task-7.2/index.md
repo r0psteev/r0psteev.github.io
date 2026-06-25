@@ -21,7 +21,7 @@ Standoff Cyberbattle 2022. State F's industries are **digital twins** of real in
 
 The Standoff Cyberbattle is an annual cyber exercise which brings together teams of white hat hackers all over the world to attack a digital replica of the fictional state, State F, and generate security relevant events.
 
-Logs, Artifcats and traffic dumps from the Standoff Cyberbattle are collected, effective TTPs from white hat hackers are handpicked and their kill chains reconstructed. For us defenders to investigate them in a virtual environment using **real commercial security tools**. This virtual environment is referred to as Cyberbones.
+Logs, Artifcats and traffic dumps from the Standoff Cyberbattle are collected, effective TTPs from white hat hackers are handpicked and their kill chains reconstructed. For us defenders to investigate them in a virtual environment using **commercial security tools**. This virtual environment is referred to as Cyberbones.
 
 
 # Task Description
@@ -60,7 +60,7 @@ There are 2 domain controllers in the environment:
 
 # Procedure
 
-We know from the [previous task]() that the HR officer's workstation from which the attackers performed privilege escalation is `COMP-2159.hv-logistics.stf`.
+We know from the [previous task](/posts/standoff-cyberbones-heavy-logistics-task-7.1/) that the HR officer's workstation from which the attackers performed privilege escalation is `COMP-2159.hv-logistics.stf`.
 
 ## Checking on PT NAD.
 
@@ -137,7 +137,7 @@ event_src.host = "COMP-2159.hv-logistics.stf" and object.process.name = "runascs
 ```
 
 - The query above searches for instances where the binary `runascs_net2.exe` was used on the host `COMP-2159.hv-logistics.stf`.
-- The aim is to find instances where its full cmdline was logged by the SIEM, so as to recover the password of `b_rivers_admin`.
+- The aim is to find instances where its full command line was logged by the SIEM, so as to recover the password of `b_rivers_admin`.
 - There are 54 events which match this filter.
 - Among the matching instances, we find one instance where the attacker ran the help manual of the command.
 
@@ -162,4 +162,4 @@ RunasCs_net2.exe  B_Rivers_admin -p zY2oWqz2qn3Ne71W -d hv-logistics.stf
 
 # Ref
 
-- link to Task 7.1 blog post.
+- [Standoff Cyberbones - Heavy Logistics Task 7.1](/posts/standoff-cyberbones-heavy-logistics-task-7.1/)
