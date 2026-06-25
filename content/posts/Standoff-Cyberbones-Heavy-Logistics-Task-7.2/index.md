@@ -155,6 +155,7 @@ RunasCs_net2.exe  B_Rivers_admin -p zY2oWqz2qn3Ne71W -d hv-logistics.stf
 ```
 
 - The password is `zY2oWqz2qn3Ne71W`
+- The points for the task were acquired by submitting the password `zY2oWqz2qn3Ne71W`
 
 
 ![Got Challenge points](./14.png)
