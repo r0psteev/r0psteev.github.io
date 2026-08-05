@@ -950,7 +950,7 @@ exposed to locally running containers via the configured subnet `192.168.65.7:23
 The IP address `192.168.65.7` is an internal gateway address used by Docker Desktop for communication between
 containers and the underlying Docker Desktop virtual machine.
 
-Shout out to [@tameen](https://profile.hackthebox.com/profile/019db0a2-4680-72b6-a3bd-610545ce604d) and @zerokoollabs on hackthebox for their help on this vulnerability.
+Shout out to [@tameen](https://tameen.it/) and @zerokoollabs on hackthebox for their help on this vulnerability.
 
 From prior enumeration of the MonitorsFour main web app, it was found in the changelog that the version of
 Docker Desktop in use by the target is Docker Desktop 4.44.2, which is vulnerable.
