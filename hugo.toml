@@ -23,3 +23,7 @@ summaryLength = 70
       title = 'Github'
       icon = 'brand-github'
       link = 'https://github.com/r0psteev'
+
+[services]
+  [services.googleAnalytics]
+    ID = "G-EC27W9MWWW"
