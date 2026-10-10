@@ -14,10 +14,11 @@ to the same network.
 
 # Introduction
 
-Sliver has 2 types of proxies, an **In-band proxy** and a **Wireguard Proxy**.
+Sliver C2 is an open-source, cross-platform Command-and-Control (C2) framework developed by [Bishop Fox](https://bishopfox.com/) for red-teaming and adversary emulation.
 
-The In-band proxy works only within a session, and can be used e.g with proxychains to
-tunnel tools traffic through an implant into a corporate network.
+Sliver supports 2 types of proxies, an **In-band proxy** and a **Wireguard Proxy**.
+
+The In-band proxy works only within an implant's interactive session, and can be used with `proxychains` to tunnel tools traffic through an implant into a corporate network.
 
 The Wireguard proxy requires a wireguard implant. Sliver will generate a wireguard config
 file which can be used with the `wg-quick` command to connect to the implant via the Sliver server.
