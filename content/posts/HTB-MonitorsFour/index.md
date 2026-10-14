@@ -8,7 +8,7 @@ tags = [
   ]
 image = 'featured.png'
 summary = """
-MonitorsFour is an easy Windows box from HackTheBox in which we exploit a type juggling
+MonitorsFour is an easy rated Windows box from HackTheBox in which we exploit a type juggling
 vulnerability in an API to dump user credentials.
 From the credentials, we login to a cacti instance which is vulnerable to `CVE-2025-24367`.
 This vulnerability is exploited to gain a shell in a docker container and from the docker
